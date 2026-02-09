@@ -1,6 +1,9 @@
 package com.boardgameapp.security;
 
-import io.jsonwebtoken.*;
+import com.boardgameapp.config.MissingSecretException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,8 +22,12 @@ public class JwtUtil {
     private final long expirationMs;
 
     public JwtUtil(
-            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.secret:}") String secret,
             @Value("${app.jwt.expiration-ms}") long expirationMs) {
+        if (secret == null || secret.isBlank()) {
+            throw new MissingSecretException(
+                    "JWT secret must be set and non-empty. Set the JWT_SECRET environment variable (or app.jwt.secret).");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
@@ -46,11 +53,11 @@ public class JwtUtil {
         return getClaims(token).get("userId", Long.class);
     }
 
-    /** トークンが有効かつ指定ユーザー名と一致するか検証する。 */
+    /** トークンが有効かつ指定ユーザー名と一致するか検証する（トークンは1回のみパース）。 */
     public boolean validateToken(String token, String username) {
         try {
-            String subject = extractUsername(token);
-            return subject.equals(username) && !isExpired(token);
+            Claims claims = getClaims(token);
+            return claims.getSubject().equals(username) && !claims.getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }

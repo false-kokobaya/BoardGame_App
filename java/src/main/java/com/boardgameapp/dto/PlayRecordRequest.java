@@ -1,6 +1,8 @@
 package com.boardgameapp.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
@@ -10,7 +12,10 @@ public class PlayRecordRequest {
     @NotNull(message = "Play date is required")
     private LocalDate playedAt;
 
+    @Size(max = 1000)
     private String memo;
+
+    @Min(value = 1, message = "Player count must be at least 1")
     private Integer playerCount;
 
     public LocalDate getPlayedAt() {

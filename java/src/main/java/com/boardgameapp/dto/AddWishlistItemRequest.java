@@ -1,6 +1,7 @@
 package com.boardgameapp.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /** ほしいものリスト追加APIのリクエスト。 */
@@ -11,6 +12,7 @@ public class AddWishlistItemRequest {
     private String name;
 
     @Size(max = 1000)
+    @Pattern(regexp = "^(https?://.*)?$", message = "Thumbnail URL must be empty or use http or https scheme")
     private String thumbnailUrl;
 
     public String getName() {

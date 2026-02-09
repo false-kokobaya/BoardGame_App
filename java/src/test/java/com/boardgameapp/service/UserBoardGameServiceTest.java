@@ -5,7 +5,7 @@ import com.boardgameapp.dto.UpdateBoardGameRequest;
 import com.boardgameapp.dto.UserBoardGameResponse;
 import com.boardgameapp.entity.User;
 import com.boardgameapp.entity.UserBoardGame;
-import com.boardgameapp.repository.PlayRecordRepository;
+import com.boardgameapp.exception.ResourceNotFoundException;
 import com.boardgameapp.repository.UserBoardGameRepository;
 import com.boardgameapp.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +17,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,9 +39,6 @@ class UserBoardGameServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
-    @Mock
-    private PlayRecordRepository playRecordRepository;
 
     @InjectMocks
     private UserBoardGameService sut;
@@ -73,23 +72,23 @@ class UserBoardGameServiceTest {
         @Test
         void ユーザーが存在すれば所持ゲーム一覧を返す() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
-            when(userBoardGameRepository.findByUserIdOrderByAddedAtDesc(USER_ID))
-                    .thenReturn(List.of(savedGame));
+            when(userBoardGameRepository.findByUserIdOrderByAddedAtDesc(eq(USER_ID), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(savedGame)));
 
-            List<UserBoardGameResponse> result = sut.listByUsername(USERNAME);
+            var result = sut.listByUsername(USERNAME, Pageable.unpaged());
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getName()).isEqualTo("カタン");
-            assertThat(result.get(0).getId()).isEqualTo(10L);
-            assertThat(result.get(0).getYearPublished()).isEqualTo(1995);
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("カタン");
+            assertThat(result.getContent().get(0).getId()).isEqualTo(10L);
+            assertThat(result.getContent().get(0).getYearPublished()).isEqualTo(1995);
         }
 
         @Test
-        void ユーザーが存在しなければIllegalArgumentException() {
+        void ユーザーが存在しなければResourceNotFoundException() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.listByUsername(USERNAME))
-                    .isInstanceOf(IllegalArgumentException.class)
+            assertThatThrownBy(() -> sut.listByUsername(USERNAME, Pageable.unpaged()))
+                    .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessage("User not found");
         }
     }
@@ -169,14 +168,16 @@ class UserBoardGameServiceTest {
 
             ArgumentCaptor<UserBoardGame> captor = ArgumentCaptor.forClass(UserBoardGame.class);
             verify(userBoardGameRepository).save(captor.capture());
-            assertThat(captor.getValue().getName()).isEqualTo("カタン 新版");
-            assertThat(captor.getValue().getThumbnailUrl()).isNull();
-            assertThat(captor.getValue().getYearPublished()).isNull();
+            UserBoardGame updated = captor.getValue();
+            assertThat(updated.getName()).isEqualTo("カタン 新版");
+            // 部分更新: null のフィールドは変更しない（thumbnailUrl/yearPublished はそのまま）
+            assertThat(updated.getThumbnailUrl()).isNull();
+            assertThat(updated.getYearPublished()).isEqualTo(1995);
             assertThat(result.getName()).isEqualTo("カタン 新版");
         }
 
         @Test
-        void ゲームが存在しなければIllegalArgumentException() {
+        void ゲームが存在しなければResourceNotFoundException() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
             when(userBoardGameRepository.findByIdAndUserId(999L, USER_ID)).thenReturn(Optional.empty());
 
@@ -184,7 +185,7 @@ class UserBoardGameServiceTest {
             request.setName("x");
 
             assertThatThrownBy(() -> sut.update(USERNAME, 999L, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessage("Board game not found");
         }
     }
@@ -193,14 +194,13 @@ class UserBoardGameServiceTest {
     @DisplayName("delete")
     class Delete {
         @Test
-        void 自分のゲームを削除できる_プレイ記録を先に削除してからゲームを削除する() {
+        void 自分のゲームを削除できる_紐づくプレイ記録はカスケードで削除される() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
             when(userBoardGameRepository.findByIdAndUserId(10L, USER_ID))
                     .thenReturn(Optional.of(savedGame));
 
             sut.delete(USERNAME, 10L);
 
-            verify(playRecordRepository).deleteByUserBoardGameId(10L);
             verify(userBoardGameRepository).delete(savedGame);
         }
     }

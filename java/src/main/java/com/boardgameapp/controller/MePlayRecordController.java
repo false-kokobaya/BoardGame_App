@@ -7,7 +7,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -67,7 +69,11 @@ public class MePlayRecordController {
             @Valid @RequestBody PlayRecordRequest request) {
         String username = auth.getName();
         PlayRecordResponse created = playRecordService.add(username, userBoardGameId, request);
-        return ResponseEntity.ok(created);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     /**
@@ -86,7 +92,7 @@ public class MePlayRecordController {
             @PathVariable Long id,
             @Valid @RequestBody PlayRecordRequest request) {
         String username = auth.getName();
-        PlayRecordResponse updated = playRecordService.update(username, id, request);
+        PlayRecordResponse updated = playRecordService.update(username, userBoardGameId, id, request);
         return ResponseEntity.ok(updated);
     }
 
@@ -104,7 +110,7 @@ public class MePlayRecordController {
             @PathVariable Long userBoardGameId,
             @PathVariable Long id) {
         String username = auth.getName();
-        playRecordService.delete(username, id);
+        playRecordService.delete(username, userBoardGameId, id);
         return ResponseEntity.noContent().build();
     }
 }

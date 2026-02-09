@@ -10,7 +10,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * ユーザー登録・ログインとJWT発行を行うサービス。
@@ -35,24 +39,30 @@ public class AuthService {
 
     /**
      * 新規ユーザーを登録し、JWTトークンとユーザー情報を返す。
+     * ユーザー名・メール重複時は 409 Conflict。一意制約違反（TOCTOU 含む）も同様に 409 で返す。
      *
      * @param request ユーザー名・メール・パスワード
      * @return トークンとユーザー名・ID
      */
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user = userRepository.save(user);
-        String token = jwtUtil.generateToken(user.getUsername(), user.getId());
-        return new AuthResponse(token, user.getUsername(), user.getId());
+        try {
+            User user = new User();
+            user.setUsername(request.getUsername());
+            user.setEmail(request.getEmail());
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            user = userRepository.save(user);
+            String token = jwtUtil.generateToken(user.getUsername(), user.getId());
+            return new AuthResponse(token, user.getUsername(), user.getId());
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username or email already exists", e);
+        }
     }
 
     /**

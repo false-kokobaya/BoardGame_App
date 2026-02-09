@@ -59,11 +59,10 @@ export const boardgamesApi = {
   delete(id: number) {
     return client.delete(`/me/boardgames/${id}`)
   },
-  /** 画像ファイルをアップロードし、表示用URLを返す */
-  async uploadImage(file: File): Promise<UploadImageResponse> {
+  /** 画像ファイルをアップロードし、表示用URLを返す（list/add/update/delete と同様に AxiosResponse を返す） */
+  uploadImage(file: File) {
     const form = new FormData()
     form.append('file', file)
-    const { data } = await client.post<UploadImageResponse>('/me/upload-image', form)
-    return data
+    return client.post<UploadImageResponse>('/me/upload-image', form)
   },
 }

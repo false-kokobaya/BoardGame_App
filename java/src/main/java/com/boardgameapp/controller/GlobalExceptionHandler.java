@@ -1,9 +1,11 @@
 package com.boardgameapp.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.boardgameapp.exception.ResourceNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -17,6 +19,10 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private static final String SAFE_ERROR_MESSAGE = "Invalid request parameters";
+
     /**
      * バリデーションエラー（@Valid）を 400 で返す。
      *
@@ -26,25 +32,38 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String field = ((FieldError) error).getField();
-            String message = error.getDefaultMessage();
-            errors.put(field, message);
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            errors.put(error.getField(), error.getDefaultMessage());
         });
         return ResponseEntity.badRequest().body(errors);
     }
 
     /**
      * IllegalArgumentException（例: 未検出のリソース）を 400 で返す。
+     * クライアントには汎用メッセージを返し、詳細はログに記録する。
      *
      * @param ex 例外
-     * @return error キーにメッセージ
+     * @return error キーに安全なメッセージ
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.error("IllegalArgumentException: {}", ex.getMessage(), ex);
+        Map<String, String> body = new HashMap<>();
+        body.put("error", SAFE_ERROR_MESSAGE);
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    /**
+     * リソース未検出を 404 で返す。
+     *
+     * @param ex 例外
+     * @return error メッセージ
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleResourceNotFound(ResourceNotFoundException ex) {
         Map<String, String> body = new HashMap<>();
         body.put("error", ex.getMessage());
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     /**

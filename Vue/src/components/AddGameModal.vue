@@ -29,8 +29,8 @@ async function onImageSelect(e: Event) {
   if (!file) return
   uploadLoading.value = true
   try {
-    const { url } = await boardgamesApi.uploadImage(file)
-    thumbnailUrl.value = url
+    const { data } = await boardgamesApi.uploadImage(file)
+    thumbnailUrl.value = data.url
   } catch {
     error.value = '画像のアップロードに失敗しました'
   } finally {

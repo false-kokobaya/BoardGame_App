@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,18 +54,18 @@ class MeBoardGameControllerTest {
         @Test
         @WithMockUser(username = USERNAME)
         void 認証済みなら一覧を返す() throws Exception {
-            UserBoardGameResponse resp = new UserBoardGameResponse();
-            resp.setId(1L);
-            resp.setName("カタン");
-            when(userBoardGameService.listByUsername(USERNAME)).thenReturn(List.of(resp));
+            UserBoardGameResponse resp = new UserBoardGameResponse(
+                    1L, null, "カタン", null, null, null, null, null, null, null);
+            when(userBoardGameService.listByUsername(eq(USERNAME), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(resp)));
 
             mockMvc.perform(get("/api/me/boardgames"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].name").value("カタン"))
-                    .andExpect(jsonPath("$[0].id").value(1));
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].name").value("カタン"))
+                    .andExpect(jsonPath("$.content[0].id").value(1));
 
-            verify(userBoardGameService).listByUsername(USERNAME);
+            verify(userBoardGameService).listByUsername(eq(USERNAME), any(Pageable.class));
         }
 
         @Test
@@ -83,10 +85,8 @@ class MeBoardGameControllerTest {
             body.setName("カルカソンヌ");
             body.setYearPublished(2000);
 
-            UserBoardGameResponse created = new UserBoardGameResponse();
-            created.setId(10L);
-            created.setName("カルカソンヌ");
-            created.setAddedAt(Instant.now());
+            UserBoardGameResponse created = new UserBoardGameResponse(
+                    10L, null, "カルカソンヌ", null, null, null, null, null, null, Instant.now());
             when(userBoardGameService.add(eq(USERNAME), any(AddBoardGameRequest.class))).thenReturn(created);
 
             mockMvc.perform(post("/api/me/boardgames")
@@ -123,9 +123,8 @@ class MeBoardGameControllerTest {
             UpdateBoardGameRequest body = new UpdateBoardGameRequest();
             body.setName("カタン 新版");
 
-            UserBoardGameResponse updated = new UserBoardGameResponse();
-            updated.setId(5L);
-            updated.setName("カタン 新版");
+            UserBoardGameResponse updated = new UserBoardGameResponse(
+                    5L, null, "カタン 新版", null, null, null, null, null, null, null);
             when(userBoardGameService.update(eq(USERNAME), eq(5L), any(UpdateBoardGameRequest.class)))
                     .thenReturn(updated);
 
@@ -159,9 +158,8 @@ class MeBoardGameControllerTest {
         @Test
         @WithMockUser(username = USERNAME)
         void 認証済みなら1件取得できる() throws Exception {
-            UserBoardGameResponse resp = new UserBoardGameResponse();
-            resp.setId(2L);
-            resp.setName("ディクシット");
+            UserBoardGameResponse resp = new UserBoardGameResponse(
+                    2L, null, "ディクシット", null, null, null, null, null, null, null);
             when(userBoardGameService.getByIdAndUsername(2L, USERNAME)).thenReturn(resp);
 
             mockMvc.perform(get("/api/me/boardgames/2"))

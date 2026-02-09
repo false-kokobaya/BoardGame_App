@@ -5,11 +5,14 @@ import com.boardgameapp.dto.UpdateBoardGameRequest;
 import com.boardgameapp.dto.UserBoardGameResponse;
 import com.boardgameapp.service.UserBoardGameService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.util.List;
+import java.net.URI;
 
 /**
  * 認証ユーザー所有のボードゲーム一覧・追加・更新・削除・1件取得APIを提供するコントローラ。
@@ -25,16 +28,17 @@ public class MeBoardGameController {
     }
 
     /**
-     * 認証ユーザーのボードゲーム一覧を取得する。
+     * 認証ユーザーのボードゲーム一覧を取得する（ページング: page, size, sort をクエリパラメータで指定可能）。
      *
      * @param auth 認証情報
-     * @return 追加日時の降順のボードゲーム一覧
+     * @param pageable ページ・サイズ・ソート（省略時はデフォルト）
+     * @return 追加日時の降順のボードゲームページ
      */
     @GetMapping
-    public ResponseEntity<List<UserBoardGameResponse>> list(Authentication auth) {
+    public ResponseEntity<Page<UserBoardGameResponse>> list(Authentication auth, Pageable pageable) {
         String username = auth.getName();
-        List<UserBoardGameResponse> list = userBoardGameService.listByUsername(username);
-        return ResponseEntity.ok(list);
+        Page<UserBoardGameResponse> page = userBoardGameService.listByUsername(username, pageable);
+        return ResponseEntity.ok(page);
     }
 
     /**
@@ -50,7 +54,11 @@ public class MeBoardGameController {
             @Valid @RequestBody AddBoardGameRequest request) {
         String username = auth.getName();
         UserBoardGameResponse created = userBoardGameService.add(username, request);
-        return ResponseEntity.ok(created);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     /**

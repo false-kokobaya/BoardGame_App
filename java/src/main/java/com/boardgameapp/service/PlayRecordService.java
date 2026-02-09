@@ -3,6 +3,7 @@ package com.boardgameapp.service;
 import com.boardgameapp.dto.PlayRecordRequest;
 import com.boardgameapp.dto.PlayRecordResponse;
 import com.boardgameapp.entity.PlayRecord;
+import com.boardgameapp.exception.ResourceNotFoundException;
 import com.boardgameapp.entity.User;
 import com.boardgameapp.entity.UserBoardGame;
 import com.boardgameapp.repository.PlayRecordRepository;
@@ -10,6 +11,7 @@ import com.boardgameapp.repository.UserBoardGameRepository;
 import com.boardgameapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,10 +44,11 @@ public class PlayRecordService {
     @Transactional(readOnly = true)
     public List<PlayRecordResponse> listByUserBoardGame(String username, Long userBoardGameId) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UserBoardGame ubg = userBoardGameRepository.findByIdAndUserId(userBoardGameId, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Board game not found"));
-        return playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(ubg.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
+        return playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(ubg.getId(), Pageable.unpaged())
+                .getContent()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -60,8 +63,9 @@ public class PlayRecordService {
     @Transactional(readOnly = true)
     public List<PlayRecordResponse> listAllByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return playRecordRepository.findByUserIdOrderByPlayedAtDesc(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return playRecordRepository.findByUserIdOrderByPlayedAtDesc(user.getId(), Pageable.unpaged())
+                .getContent()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -78,9 +82,9 @@ public class PlayRecordService {
     @Transactional
     public PlayRecordResponse add(String username, Long userBoardGameId, PlayRecordRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UserBoardGame ubg = userBoardGameRepository.findByIdAndUserId(userBoardGameId, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Board game not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
         PlayRecord record = new PlayRecord();
         record.setUserId(user.getId());
         record.setUserBoardGameId(ubg.getId());
@@ -92,19 +96,23 @@ public class PlayRecordService {
     }
 
     /**
-     * 指定IDのプレイ記録を更新する。
+     * 指定IDのプレイ記録を更新する。URL の userBoardGameId と記録のゲームIDが一致しない場合は 404。
      *
      * @param username ユーザー名
+     * @param userBoardGameId URL のゲームID（整合性チェック用）
      * @param playRecordId プレイ記録ID
      * @param request 更新内容
      * @return 更新後のプレイ記録
      */
     @Transactional
-    public PlayRecordResponse update(String username, Long playRecordId, PlayRecordRequest request) {
+    public PlayRecordResponse update(String username, Long userBoardGameId, Long playRecordId, PlayRecordRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         PlayRecord record = playRecordRepository.findByIdAndUserId(playRecordId, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Play record not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Play record not found"));
+        if (!record.getUserBoardGameId().equals(userBoardGameId)) {
+            throw new ResourceNotFoundException("Play record not found");
+        }
         record.setPlayedAt(request.getPlayedAt());
         record.setMemo(request.getMemo());
         record.setPlayerCount(request.getPlayerCount());
@@ -113,17 +121,21 @@ public class PlayRecordService {
     }
 
     /**
-     * 指定IDのプレイ記録を削除する。
+     * 指定IDのプレイ記録を削除する。URL の userBoardGameId と記録のゲームIDが一致しない場合は 404。
      *
      * @param username ユーザー名
+     * @param userBoardGameId URL のゲームID（整合性チェック用）
      * @param playRecordId プレイ記録ID
      */
     @Transactional
-    public void delete(String username, Long playRecordId) {
+    public void delete(String username, Long userBoardGameId, Long playRecordId) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         PlayRecord record = playRecordRepository.findByIdAndUserId(playRecordId, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Play record not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Play record not found"));
+        if (!record.getUserBoardGameId().equals(userBoardGameId)) {
+            throw new ResourceNotFoundException("Play record not found");
+        }
         playRecordRepository.delete(record);
     }
 

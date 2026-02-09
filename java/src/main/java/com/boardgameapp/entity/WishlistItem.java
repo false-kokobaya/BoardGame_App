@@ -24,7 +24,14 @@ public class WishlistItem {
     private String thumbnailUrl;
 
     @Column(nullable = false, updatable = false)
-    private Instant addedAt = Instant.now();
+    private Instant addedAt;
+
+    @PrePersist
+    private void setAddedAtIfNull() {
+        if (addedAt == null) {
+            addedAt = Instant.now();
+        }
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
