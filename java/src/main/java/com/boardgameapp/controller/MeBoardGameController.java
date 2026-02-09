@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -53,7 +55,7 @@ public class MeBoardGameController {
      *
      * @param auth 認証情報
      * @param request ゲーム名・サムネURL・年など
-     * @return 作成されたゲーム情報（200 OK、テスト期待に合わせる）
+     * @return 作成されたゲーム情報（201 Created + Location）
      */
     @PostMapping
     public ResponseEntity<UserBoardGameResponse> add(
@@ -61,7 +63,11 @@ public class MeBoardGameController {
             @Valid @RequestBody AddBoardGameRequest request) {
         String username = requireUsername(auth);
         UserBoardGameResponse created = userBoardGameService.add(username, request);
-        return ResponseEntity.ok(created);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.id())
+                .toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     /**

@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserBoardGameService {
 
+    private static final int DEFAULT_PAGE_SIZE = 20;
+
     private final UserBoardGameRepository userBoardGameRepository;
     private final UserRepository userRepository;
 
@@ -37,7 +39,6 @@ public class UserBoardGameService {
      * @param pageable ページ・サイズ・ソート
      * @return ボードゲームのページ
      */
-    private static final int DEFAULT_PAGE_SIZE = 20;
 
     @Transactional(readOnly = true)
     public Page<UserBoardGameResponse> listByUsername(String username, Pageable pageable) {
@@ -109,6 +110,14 @@ public class UserBoardGameService {
         }
         if (request.getMaxPlayTimeMinutes() != null) {
             entity.setMaxPlayTimeMinutes(request.getMaxPlayTimeMinutes());
+        }
+        if (entity.getMinPlayers() != null && entity.getMaxPlayers() != null
+                && entity.getMinPlayers() > entity.getMaxPlayers()) {
+            throw new IllegalArgumentException("Min players must not exceed max players");
+        }
+        if (entity.getMinPlayTimeMinutes() != null && entity.getMaxPlayTimeMinutes() != null
+                && entity.getMinPlayTimeMinutes() > entity.getMaxPlayTimeMinutes()) {
+            throw new IllegalArgumentException("Min play time must not exceed max play time");
         }
         entity = userBoardGameRepository.save(entity);
         return toResponse(entity);

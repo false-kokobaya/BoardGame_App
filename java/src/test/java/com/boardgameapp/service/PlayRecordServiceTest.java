@@ -91,10 +91,11 @@ class PlayRecordServiceTest {
             var result = sut.listByUserBoardGame(USERNAME, GAME_ID, Pageable.unpaged());
 
             assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).getId()).isEqualTo(100L);
-            assertThat(result.getContent().get(0).getPlayedAt()).isEqualTo(LocalDate.of(2024, 1, 15));
-            assertThat(result.getContent().get(0).getMemo()).isEqualTo("楽しかった");
-            assertThat(result.getContent().get(0).getPlayerCount()).isEqualTo(4);
+            var playRecord = result.getContent().get(0);
+            assertThat(playRecord.getId()).isEqualTo(100L);
+            assertThat(playRecord.getPlayedAt()).isEqualTo(LocalDate.of(2024, 1, 15));
+            assertThat(playRecord.getMemo()).isEqualTo("楽しかった");
+            assertThat(playRecord.getPlayerCount()).isEqualTo(4);
         }
 
         @Test

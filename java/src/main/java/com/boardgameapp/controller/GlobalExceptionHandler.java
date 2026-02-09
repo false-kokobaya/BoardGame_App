@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,15 +54,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(new ErrorResponse(SAFE_ERROR_MESSAGE));
     }
 
+    private static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
+
     /**
-     * リソース未検出を 404 で返す。
+     * リソース未検出を 404 で返す。クライアントには汎用メッセージを返し、詳細はログに記録する。
      *
      * @param ex 例外
-     * @return ErrorResponse
+     * @return ErrorResponse（サニタイズ済みメッセージ）
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
+        log.warn("Resource not found: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(RESOURCE_NOT_FOUND_MESSAGE));
     }
 
     /**
@@ -78,13 +82,17 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 認証失敗（ログイン不正）を 401 で返す。
+     * 認証失敗（ログイン不正）を 401 で返す。リクエスト情報を WARN でログ（パスワードは含めない）。
      *
      * @param ex 認証例外
+     * @param req リクエスト（ログ用）
      * @return ErrorResponse
      */
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest req) {
+        String username = req.getParameter("username");
+        log.warn("Authentication failed: remoteAddr={}, uri={}, username={}",
+                req.getRemoteAddr(), req.getRequestURI(), username != null ? username : "(none)", ex);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse("Invalid username or password"));
     }

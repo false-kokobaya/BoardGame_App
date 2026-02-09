@@ -61,7 +61,7 @@ class UserBoardGameServiceTest {
         savedGame.setId(10L);
         savedGame.setUserId(USER_ID);
         savedGame.setName("カタン");
-        savedGame.setThumbnailUrl(null);
+        savedGame.setThumbnailUrl("https://example.com/old.png");
         savedGame.setYearPublished(1995);
         savedGame.setMinPlayers(3);
         savedGame.setMaxPlayers(4);
@@ -79,9 +79,9 @@ class UserBoardGameServiceTest {
             var result = sut.listByUsername(USERNAME, PageRequest.of(0, 20));
 
             assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).getName()).isEqualTo("カタン");
-            assertThat(result.getContent().get(0).getId()).isEqualTo(10L);
-            assertThat(result.getContent().get(0).getYearPublished()).isEqualTo(1995);
+            assertThat(result.getContent().get(0).name()).isEqualTo("カタン");
+            assertThat(result.getContent().get(0).id()).isEqualTo(10L);
+            assertThat(result.getContent().get(0).yearPublished()).isEqualTo(1995);
         }
 
         @Test
@@ -125,8 +125,8 @@ class UserBoardGameServiceTest {
             assertThat(saved.getMinPlayers()).isEqualTo(2);
             assertThat(saved.getMaxPlayers()).isEqualTo(5);
 
-            assertThat(result.getName()).isEqualTo("カルカソンヌ");
-            assertThat(result.getId()).isEqualTo(99L);
+            assertThat(result.name()).isEqualTo("カルカソンヌ");
+            assertThat(result.id()).isEqualTo(99L);
         }
 
         @Test
@@ -171,10 +171,10 @@ class UserBoardGameServiceTest {
             verify(userBoardGameRepository).save(captor.capture());
             UserBoardGame updated = captor.getValue();
             assertThat(updated.getName()).isEqualTo("カタン 新版");
-            // 部分更新: null のフィールドは変更しない（thumbnailUrl/yearPublished はそのまま）
-            assertThat(updated.getThumbnailUrl()).isNull();
+            // 部分更新: request.setThumbnailUrl(null) は「変更しない」なので既存のサムネイルが残る
+            assertThat(updated.getThumbnailUrl()).isEqualTo("https://example.com/old.png");
             assertThat(updated.getYearPublished()).isEqualTo(1995);
-            assertThat(result.getName()).isEqualTo("カタン 新版");
+            assertThat(result.name()).isEqualTo("カタン 新版");
         }
 
         @Test
@@ -218,8 +218,8 @@ class UserBoardGameServiceTest {
             UserBoardGameResponse result = sut.getByIdAndUsername(10L, USERNAME);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(10L);
-            assertThat(result.getName()).isEqualTo("カタン");
+            assertThat(result.id()).isEqualTo(10L);
+            assertThat(result.name()).isEqualTo("カタン");
         }
     }
 }

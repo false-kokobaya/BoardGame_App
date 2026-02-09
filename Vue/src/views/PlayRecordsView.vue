@@ -34,7 +34,7 @@ async function loadPlays() {
   playsLoading.value = true
   try {
     const { data } = await playsApi.listByGame(selectedGame.value.id)
-    plays.value = data
+    plays.value = data.content ?? []
   } finally {
     playsLoading.value = false
   }

@@ -1,5 +1,6 @@
 package com.boardgameapp.controller;
 
+import com.boardgameapp.dto.ErrorResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,16 +33,16 @@ public class ImageUploadController {
      * @return アクセス用URL（/api/uploads/xxx）
      */
     @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<UploadImageResponse> uploadImage(
+    public ResponseEntity<?> uploadImage(
             Authentication auth,
             @RequestParam("file") MultipartFile file) throws IOException {
         if (file.isEmpty()) {
-            return ResponseEntity.<UploadImageResponse>badRequest().build();
+            return ResponseEntity.badRequest().body(new ErrorResponse("file is empty"));
         }
         String contentType = file.getContentType();
         String ext = resolveExtension(contentType, file.getOriginalFilename());
         if (ext == null) {
-            return ResponseEntity.<UploadImageResponse>badRequest().build();
+            return ResponseEntity.badRequest().body(new ErrorResponse("unsupported/invalid file extension"));
         }
         String username = (auth != null && auth.getName() != null) ? auth.getName() : "anonymous";
         String safeUser = username.replaceAll("[^a-zA-Z0-9_-]", "_");

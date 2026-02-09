@@ -57,14 +57,14 @@ public class SecurityConfig {
     /** フロントエンドオリジン向けのCORS設定を返す。 */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        List<String> origins = (allowedOriginsConfig == null || allowedOriginsConfig.isBlank())
-                ? DEFAULT_ALLOWED_ORIGINS
+        List<String> parsed = (allowedOriginsConfig == null)
+                ? List.of()
                 : Arrays.stream(allowedOriginsConfig.split(","))
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
                         .toList();
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(origins.isEmpty() ? DEFAULT_ALLOWED_ORIGINS : origins);
+        config.setAllowedOrigins(parsed.isEmpty() ? DEFAULT_ALLOWED_ORIGINS : parsed);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
