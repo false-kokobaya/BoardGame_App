@@ -12,9 +12,10 @@ public class PlayRecordRequest {
     @NotNull(message = "Play date is required")
     private LocalDate playedAt;
 
-    @Size(max = 1000)
+    @Size(max = 2000)
     private String memo;
 
+    @NotNull(message = "Player count is required")
     @Min(value = 1, message = "Player count must be at least 1")
     private Integer playerCount;
 

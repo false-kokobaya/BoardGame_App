@@ -23,7 +23,7 @@ public interface PlayRecordRepository extends JpaRepository<PlayRecord, Long> {
     Optional<PlayRecord> findByIdAndUserId(Long id, Long userId);
 
     /** 指定ゲームに紐づくプレイ記録を一括削除する。 */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM PlayRecord p WHERE p.userBoardGame.id = :userBoardGameId")
     void deleteByUserBoardGameId(@Param("userBoardGameId") Long userBoardGameId);
 }

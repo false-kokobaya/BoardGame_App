@@ -2,6 +2,7 @@ package com.boardgameapp.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,6 +30,7 @@ public class PlayRecord {
     @Column(length = 2000)
     private String memo;
 
+    @NotNull
     @Min(1)
     private Integer playerCount;
 

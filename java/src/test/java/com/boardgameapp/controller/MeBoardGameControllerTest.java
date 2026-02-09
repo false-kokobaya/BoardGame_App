@@ -61,9 +61,9 @@ class MeBoardGameControllerTest {
 
             mockMvc.perform(get("/api/me/boardgames"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content", hasSize(1)))
-                    .andExpect(jsonPath("$.content[0].name").value("カタン"))
-                    .andExpect(jsonPath("$.content[0].id").value(1));
+                    .andExpect(jsonPath("$", hasSize(1)))
+                    .andExpect(jsonPath("$[0].name").value("カタン"))
+                    .andExpect(jsonPath("$[0].id").value(1));
 
             verify(userBoardGameService).listByUsername(eq(USERNAME), any(Pageable.class));
         }

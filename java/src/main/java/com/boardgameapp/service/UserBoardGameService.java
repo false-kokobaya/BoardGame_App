@@ -9,7 +9,9 @@ import com.boardgameapp.exception.ResourceNotFoundException;
 import com.boardgameapp.repository.UserBoardGameRepository;
 import com.boardgameapp.repository.UserRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +41,8 @@ public class UserBoardGameService {
     public Page<UserBoardGameResponse> listByUsername(String username, Pageable pageable) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return userBoardGameRepository.findByUserIdOrderByAddedAtDesc(user.getId(), pageable)
+        Pageable withSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("addedAt").descending());
+        return userBoardGameRepository.findByUserIdOrderByAddedAtDesc(user.getId(), withSort)
                 .map(this::toResponse);
     }
 

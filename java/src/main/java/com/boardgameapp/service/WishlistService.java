@@ -6,10 +6,9 @@ import com.boardgameapp.entity.User;
 import com.boardgameapp.entity.WishlistItem;
 import com.boardgameapp.repository.UserRepository;
 import com.boardgameapp.repository.WishlistRepository;
-import org.springframework.http.HttpStatus;
+import com.boardgameapp.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -36,7 +35,7 @@ public class WishlistService {
     @Transactional(readOnly = true)
     public List<WishlistItemResponse> listByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return wishlistRepository.findByUserIdOrderByAddedAtDesc(user.getId()).stream()
                 .map(this::toResponse)
                 .toList();
@@ -52,7 +51,7 @@ public class WishlistService {
     @Transactional
     public WishlistItemResponse add(String username, AddWishlistItemRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         WishlistItem entity = new WishlistItem();
         entity.setUserId(user.getId());
         entity.setName(request.getName().trim());
@@ -70,9 +69,9 @@ public class WishlistService {
     @Transactional
     public void delete(String username, Long id) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         WishlistItem entity = wishlistRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Wishlist item not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Wishlist item not found"));
         wishlistRepository.delete(entity);
     }
 

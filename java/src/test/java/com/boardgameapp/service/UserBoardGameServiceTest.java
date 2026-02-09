@@ -194,7 +194,7 @@ class UserBoardGameServiceTest {
     @DisplayName("delete")
     class Delete {
         @Test
-        void 自分のゲームを削除できる_紐づくプレイ記録はカスケードで削除される() {
+        void 自分のゲームを削除できる() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
             when(userBoardGameRepository.findByIdAndUserId(10L, USER_ID))
                     .thenReturn(Optional.of(savedGame));

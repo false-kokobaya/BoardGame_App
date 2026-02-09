@@ -34,6 +34,11 @@ public class PlayRecordService {
         this.userBoardGameRepository = userBoardGameRepository;
     }
 
+    private User findUserOrThrow(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
     /**
      * 指定ゲームに紐づくプレイ記録一覧をプレイ日の降順で取得する。
      *
@@ -43,8 +48,7 @@ public class PlayRecordService {
      */
     @Transactional(readOnly = true)
     public List<PlayRecordResponse> listByUserBoardGame(String username, Long userBoardGameId) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserOrThrow(username);
         UserBoardGame ubg = userBoardGameRepository.findByIdAndUserId(userBoardGameId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
         return playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(ubg.getId(), Pageable.unpaged())
@@ -62,8 +66,7 @@ public class PlayRecordService {
      */
     @Transactional(readOnly = true)
     public List<PlayRecordResponse> listAllByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserOrThrow(username);
         return playRecordRepository.findByUserIdOrderByPlayedAtDesc(user.getId(), Pageable.unpaged())
                 .getContent()
                 .stream()
@@ -81,8 +84,7 @@ public class PlayRecordService {
      */
     @Transactional
     public PlayRecordResponse add(String username, Long userBoardGameId, PlayRecordRequest request) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserOrThrow(username);
         UserBoardGame ubg = userBoardGameRepository.findByIdAndUserId(userBoardGameId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
         PlayRecord record = new PlayRecord();
@@ -106,8 +108,7 @@ public class PlayRecordService {
      */
     @Transactional
     public PlayRecordResponse update(String username, Long userBoardGameId, Long playRecordId, PlayRecordRequest request) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserOrThrow(username);
         PlayRecord record = playRecordRepository.findByIdAndUserId(playRecordId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Play record not found"));
         if (!record.getUserBoardGameId().equals(userBoardGameId)) {
@@ -129,8 +130,7 @@ public class PlayRecordService {
      */
     @Transactional
     public void delete(String username, Long userBoardGameId, Long playRecordId) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserOrThrow(username);
         PlayRecord record = playRecordRepository.findByIdAndUserId(playRecordId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Play record not found"));
         if (!record.getUserBoardGameId().equals(userBoardGameId)) {

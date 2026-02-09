@@ -12,7 +12,7 @@ public class AddWishlistItemRequest {
     private String name;
 
     @Size(max = 1000)
-    @Pattern(regexp = "^(https?://.*)?$", message = "Thumbnail URL must be empty or use http or https scheme")
+    @Pattern(regexp = "^(https?://.*)?$", message = "サムネイル URL は空か http/https スキームで指定してください")
     private String thumbnailUrl;
 
     public String getName() {

@@ -4,12 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.boardgameapp.dto.ErrorResponse;
 import com.boardgameapp.exception.ResourceNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,7 +49,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        log.error("IllegalArgumentException: {}", ex.getMessage(), ex);
+        log.warn("IllegalArgumentException: {}", ex.getMessage(), ex);
         Map<String, String> body = new HashMap<>();
         body.put("error", SAFE_ERROR_MESSAGE);
         return ResponseEntity.badRequest().body(body);
@@ -64,6 +66,19 @@ public class GlobalExceptionHandler {
         Map<String, String> body = new HashMap<>();
         body.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    /**
+     * IOException（例: 画像アップロード保存失敗）を 500 で返す。
+     *
+     * @param ex 例外
+     * @return error メッセージ
+     */
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ErrorResponse> handleIOException(IOException ex) {
+        log.error("IOException: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Failed to save image. Please try again."));
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.boardgameapp.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -14,7 +15,7 @@ public abstract class BoardGameBaseRequest {
     private String thumbnailUrl;
 
     @Min(value = 1900, message = "Year must be 1900 or later")
-    @Max(value = 2030, message = "Year must be 2030 or earlier")
+    @Max(value = 2100, message = "Year must be 2100 or earlier")
     private Integer yearPublished;
 
     @Min(value = 1, message = "Min players must be at least 1")
@@ -79,5 +80,19 @@ public abstract class BoardGameBaseRequest {
 
     public void setMaxPlayTimeMinutes(Integer maxPlayTimeMinutes) {
         this.maxPlayTimeMinutes = maxPlayTimeMinutes;
+    }
+
+    /** 人数・プレイ時間の範囲整合性（min <= max）。 */
+    @AssertTrue(message = "Min players must not exceed max players")
+    public boolean isPlayersRangeValid() {
+        if (minPlayers == null || maxPlayers == null) return true;
+        return minPlayers <= maxPlayers;
+    }
+
+    /** プレイ時間の範囲整合性（min <= max）。 */
+    @AssertTrue(message = "Min play time must not exceed max play time")
+    public boolean isPlayTimeRangeValid() {
+        if (minPlayTimeMinutes == null || maxPlayTimeMinutes == null) return true;
+        return minPlayTimeMinutes <= maxPlayTimeMinutes;
     }
 }

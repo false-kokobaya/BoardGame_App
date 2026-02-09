@@ -27,9 +27,11 @@ import java.util.stream.Collectors;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final String DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:3000";
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:}")
     private String allowedOriginsConfig;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -61,7 +63,8 @@ public class SecurityConfig {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(origins.isEmpty() ? List.of("http://localhost:5173", "http://localhost:3000") : origins);
+        List<String> defaultList = Arrays.stream(DEFAULT_ALLOWED_ORIGINS.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+        config.setAllowedOrigins(origins.isEmpty() ? defaultList : origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
