@@ -3,6 +3,9 @@ package com.boardgameapp.entity;
 import jakarta.persistence.*;
 import java.time.Instant;
 
+/**
+ * ユーザーが所持するボードゲーム1件を表すエンティティ。
+ */
 @Entity
 @Table(name = "user_board_games")
 public class UserBoardGame {

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/** ユーザー登録APIのリクエスト。 */
 public class RegisterRequest {
 
     @NotBlank(message = "Username is required")

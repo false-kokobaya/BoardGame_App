@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * 1回のプレイ記録を表すエンティティ。
+ */
 @Entity
 @Table(name = "play_records")
 public class PlayRecord {

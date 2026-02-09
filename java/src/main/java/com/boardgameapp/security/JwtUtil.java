@@ -9,6 +9,9 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+/**
+ * JWT トークンの生成・検証・クレーム取得を行うユーティリティ。
+ */
 @Component
 public class JwtUtil {
 
@@ -22,6 +25,7 @@ public class JwtUtil {
         this.expirationMs = expirationMs;
     }
 
+    /** ユーザー名とIDをクレームに含むJWTを発行する。 */
     public String generateToken(String username, Long userId) {
         return Jwts.builder()
                 .subject(username)
@@ -32,14 +36,17 @@ public class JwtUtil {
                 .compact();
     }
 
+    /** トークンからユーザー名（subject）を取得する。 */
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
+    /** トークンからユーザーIDクレームを取得する。 */
     public Long extractUserId(String token) {
         return getClaims(token).get("userId", Long.class);
     }
 
+    /** トークンが有効かつ指定ユーザー名と一致するか検証する。 */
     public boolean validateToken(String token, String username) {
         try {
             String subject = extractUsername(token);

@@ -17,6 +17,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Spring Security の設定（JWT認証・CORS・認可）。
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -27,6 +30,7 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    /** 認証・認可とCORSのフィルタチェーンを定義する。 */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -43,6 +47,7 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /** フロントエンドオリジン向けのCORS設定を返す。 */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -55,6 +60,7 @@ public class SecurityConfig {
         return source;
     }
 
+    /** パスワードハッシュ用のBCryptエンコーダを返す。 */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

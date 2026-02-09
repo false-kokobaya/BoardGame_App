@@ -2,6 +2,7 @@ package com.boardgameapp.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+/** ログインAPIのリクエスト（ユーザー名・パスワード）。 */
 public class LoginRequest {
 
     @NotBlank(message = "Username is required")

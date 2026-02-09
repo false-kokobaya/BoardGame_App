@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 認証ユーザーのほしいものリストAPIを提供するコントローラ。
+ */
 @RestController
 @RequestMapping("/api/me/wishlist")
 public class MeWishlistController {
@@ -20,6 +23,12 @@ public class MeWishlistController {
         this.wishlistService = wishlistService;
     }
 
+    /**
+     * 認証ユーザーのほしいものリスト一覧を取得する。
+     *
+     * @param auth 認証情報
+     * @return ほしいものリスト一覧
+     */
     @GetMapping
     public ResponseEntity<List<WishlistItemResponse>> list(Authentication auth) {
         String username = auth.getName();
@@ -27,6 +36,13 @@ public class MeWishlistController {
         return ResponseEntity.ok(list);
     }
 
+    /**
+     * ほしいものリストに1件追加する。
+     *
+     * @param auth 認証情報
+     * @param request ゲーム名・BGG IDなど
+     * @return 追加されたアイテム
+     */
     @PostMapping
     public ResponseEntity<WishlistItemResponse> add(
             Authentication auth,
@@ -36,6 +52,13 @@ public class MeWishlistController {
         return ResponseEntity.ok(created);
     }
 
+    /**
+     * ほしいものリストから指定IDのアイテムを削除する。
+     *
+     * @param auth 認証情報
+     * @param id ほしいものアイテムID
+     * @return 204 No Content
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(Authentication auth, @PathVariable Long id) {
         String username = auth.getName();

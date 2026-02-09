@@ -2,6 +2,7 @@ package com.boardgameapp.dto;
 
 import java.time.Instant;
 
+/** ボードゲーム1件のAPIレスポンス。 */
 public class UserBoardGameResponse {
 
     private Long id;

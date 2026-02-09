@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
+/**
+ * ユーザー名からDBのユーザーを読み、Spring Security の UserDetails に変換する。
+ */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 

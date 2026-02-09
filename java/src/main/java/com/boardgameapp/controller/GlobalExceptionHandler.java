@@ -11,9 +11,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * コントローラ全体の例外をハンドリングし、クライアントにエラー応答を返す。
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * バリデーションエラー（@Valid）を 400 で返す。
+     *
+     * @param ex バリデーション例外
+     * @return フィールド名とメッセージのマップ
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -25,6 +34,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errors);
     }
 
+    /**
+     * IllegalArgumentException（例: 未検出のリソース）を 400 で返す。
+     *
+     * @param ex 例外
+     * @return error キーにメッセージ
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         Map<String, String> body = new HashMap<>();
@@ -32,6 +47,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    /**
+     * 認証失敗（ログイン不正）を 401 で返す。
+     *
+     * @param ex 認証例外
+     * @return error メッセージ
+     */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
         Map<String, String> body = new HashMap<>();

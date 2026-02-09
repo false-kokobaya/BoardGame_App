@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
+/** プレイ記録の追加・更新APIのリクエスト。 */
 public class PlayRecordRequest {
 
     @NotNull(message = "Play date is required")

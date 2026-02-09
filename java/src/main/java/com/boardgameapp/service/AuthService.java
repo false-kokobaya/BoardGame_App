@@ -12,6 +12,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * ユーザー登録・ログインとJWT発行を行うサービス。
+ */
 @Service
 public class AuthService {
 
@@ -30,6 +33,12 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
     }
 
+    /**
+     * 新規ユーザーを登録し、JWTトークンとユーザー情報を返す。
+     *
+     * @param request ユーザー名・メール・パスワード
+     * @return トークンとユーザー名・ID
+     */
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
@@ -46,6 +55,12 @@ public class AuthService {
         return new AuthResponse(token, user.getUsername(), user.getId());
     }
 
+    /**
+     * ユーザー名・パスワードで認証し、JWTトークンとユーザー情報を返す。
+     *
+     * @param request ユーザー名・パスワード
+     * @return トークンとユーザー名・ID
+     */
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));

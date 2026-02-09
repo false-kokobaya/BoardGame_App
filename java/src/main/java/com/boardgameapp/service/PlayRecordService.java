@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * プレイ記録の一覧・追加・更新・削除を行うサービス。
+ */
 @Service
 public class PlayRecordService {
 
@@ -29,6 +32,13 @@ public class PlayRecordService {
         this.userBoardGameRepository = userBoardGameRepository;
     }
 
+    /**
+     * 指定ゲームに紐づくプレイ記録一覧をプレイ日の降順で取得する。
+     *
+     * @param username ユーザー名
+     * @param userBoardGameId ユーザー所持ゲームID
+     * @return プレイ記録一覧
+     */
     @Transactional(readOnly = true)
     public List<PlayRecordResponse> listByUserBoardGame(String username, Long userBoardGameId) {
         User user = userRepository.findByUsername(username)
@@ -41,6 +51,12 @@ public class PlayRecordService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 指定ユーザーの全プレイ記録をプレイ日の降順で取得する。
+     *
+     * @param username ユーザー名
+     * @return プレイ記録一覧
+     */
     @Transactional(readOnly = true)
     public List<PlayRecordResponse> listAllByUsername(String username) {
         User user = userRepository.findByUsername(username)
@@ -51,6 +67,14 @@ public class PlayRecordService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 指定ゲームにプレイ記録を1件追加する。
+     *
+     * @param username ユーザー名
+     * @param userBoardGameId ユーザー所持ゲームID
+     * @param request プレイ日・メモ・人数
+     * @return 作成されたプレイ記録
+     */
     @Transactional
     public PlayRecordResponse add(String username, Long userBoardGameId, PlayRecordRequest request) {
         User user = userRepository.findByUsername(username)
@@ -67,6 +91,14 @@ public class PlayRecordService {
         return toResponse(record);
     }
 
+    /**
+     * 指定IDのプレイ記録を更新する。
+     *
+     * @param username ユーザー名
+     * @param playRecordId プレイ記録ID
+     * @param request 更新内容
+     * @return 更新後のプレイ記録
+     */
     @Transactional
     public PlayRecordResponse update(String username, Long playRecordId, PlayRecordRequest request) {
         User user = userRepository.findByUsername(username)
@@ -80,6 +112,12 @@ public class PlayRecordService {
         return toResponse(record);
     }
 
+    /**
+     * 指定IDのプレイ記録を削除する。
+     *
+     * @param username ユーザー名
+     * @param playRecordId プレイ記録ID
+     */
     @Transactional
     public void delete(String username, Long playRecordId) {
         User user = userRepository.findByUsername(username)
@@ -89,6 +127,7 @@ public class PlayRecordService {
         playRecordRepository.delete(record);
     }
 
+    /** エンティティをレスポンスDTOに変換する。 */
     private PlayRecordResponse toResponse(PlayRecord r) {
         PlayRecordResponse res = new PlayRecordResponse();
         res.setId(r.getId());

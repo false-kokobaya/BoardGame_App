@@ -3,6 +3,7 @@ package com.boardgameapp.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/** ほしいものリスト追加APIのリクエスト。 */
 public class AddWishlistItemRequest {
 
     @NotBlank(message = "名前は必須です")

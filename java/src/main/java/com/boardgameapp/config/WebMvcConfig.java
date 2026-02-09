@@ -7,12 +7,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Path;
 
+/**
+ * WebMvc の設定（アップロード画像の静的な配信パス）。
+ */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
+    /** /api/uploads/** をアップロードディレクトリから配信する。 */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         Path dir = Path.of(uploadDir).toAbsolutePath();

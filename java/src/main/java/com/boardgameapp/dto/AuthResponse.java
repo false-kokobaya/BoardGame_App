@@ -1,5 +1,6 @@
 package com.boardgameapp.dto;
 
+/** 認証成功時のレスポンス（JWTトークン・ユーザー名・ID）。 */
 public class AuthResponse {
 
     private String token;

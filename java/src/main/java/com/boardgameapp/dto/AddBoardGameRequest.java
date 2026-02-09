@@ -3,6 +3,7 @@ package com.boardgameapp.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/** ボードゲーム追加APIのリクエスト。 */
 public class AddBoardGameRequest {
 
     @NotBlank(message = "Game name is required")

@@ -2,6 +2,7 @@ package com.boardgameapp.dto;
 
 import jakarta.validation.constraints.Size;
 
+/** ボードゲーム更新APIのリクエスト。 */
 public class UpdateBoardGameRequest {
 
     @Size(max = 500)

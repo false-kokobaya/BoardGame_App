@@ -16,6 +16,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * リクエストの Authorization: Bearer からJWTを解析し、SecurityContext に認証情報を設定するフィルタ。
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 

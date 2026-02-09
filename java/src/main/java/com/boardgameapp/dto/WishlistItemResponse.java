@@ -2,6 +2,7 @@ package com.boardgameapp.dto;
 
 import java.time.Instant;
 
+/** ほしいものリスト1件のAPIレスポンス。 */
 public class WishlistItemResponse {
 
     private Long id;

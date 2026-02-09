@@ -3,6 +3,7 @@ package com.boardgameapp.dto;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/** プレイ記録1件のAPIレスポンス。 */
 public class PlayRecordResponse {
 
     private Long id;

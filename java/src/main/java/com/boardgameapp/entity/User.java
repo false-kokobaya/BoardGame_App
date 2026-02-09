@@ -3,6 +3,9 @@ package com.boardgameapp.entity;
 import jakarta.persistence.*;
 import java.time.Instant;
 
+/**
+ * アプリ利用ユーザーを表すエンティティ。
+ */
 @Entity
 @Table(name = "users")
 public class User {

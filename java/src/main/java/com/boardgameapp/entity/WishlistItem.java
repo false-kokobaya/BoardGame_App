@@ -3,6 +3,9 @@ package com.boardgameapp.entity;
 import jakarta.persistence.*;
 import java.time.Instant;
 
+/**
+ * ほしいものリストの1件を表すエンティティ。
+ */
 @Entity
 @Table(name = "wishlist_items")
 public class WishlistItem {

@@ -1,6 +1,10 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
+/**
+ * /api 向けの axios インスタンス。
+ * リクエストにJWTを付与し、401時はログイン画面へリダイレクトする。
+ */
 const client = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },

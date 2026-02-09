@@ -13,6 +13,9 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * 認証ユーザー向けの画像アップロードAPIを提供するコントローラ。
+ */
 @RestController
 @RequestMapping("/api/me")
 public class ImageUploadController {
@@ -20,6 +23,13 @@ public class ImageUploadController {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
+    /**
+     * 画像ファイルをアップロードし、公開URLを返す。
+     *
+     * @param auth 認証情報
+     * @param file アップロードする画像ファイル
+     * @return アクセス用URL（/api/uploads/xxx）
+     */
     @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadImageResponse> uploadImage(
             Authentication auth,
@@ -57,6 +67,12 @@ public class ImageUploadController {
         return null;
     }
 
+    /**
+     * Content-Type から保存用拡張子を返す。
+     *
+     * @param contentType 例: image/png
+     * @return 拡張子（jpg, png など）
+     */
     private static String extensionFromContentType(String contentType) {
         if (contentType == null) return "jpg";
         return switch (contentType) {
@@ -70,5 +86,10 @@ public class ImageUploadController {
         };
     }
 
+    /**
+     * アップロード結果。画像へのアクセスURLを保持する。
+     *
+     * @param url 例: /api/uploads/xxx.jpg
+     */
     public record UploadImageResponse(String url) {}
 }
