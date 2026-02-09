@@ -5,9 +5,12 @@ import com.boardgameapp.dto.PlayRecordResponse;
 import com.boardgameapp.entity.PlayRecord;
 import com.boardgameapp.entity.User;
 import com.boardgameapp.entity.UserBoardGame;
+import com.boardgameapp.exception.ResourceNotFoundException;
 import com.boardgameapp.repository.PlayRecordRepository;
 import com.boardgameapp.repository.UserBoardGameRepository;
 import com.boardgameapp.repository.UserRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -81,25 +85,26 @@ class PlayRecordServiceTest {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
             when(userBoardGameRepository.findByIdAndUserId(GAME_ID, USER_ID))
                     .thenReturn(Optional.of(userBoardGame));
-            when(playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(GAME_ID))
-                    .thenReturn(List.of(savedRecord));
+            when(playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(eq(GAME_ID), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(savedRecord)));
 
-            List<PlayRecordResponse> result = sut.listByUserBoardGame(USERNAME, GAME_ID);
+            var result = sut.listByUserBoardGame(USERNAME, GAME_ID, Pageable.unpaged());
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getId()).isEqualTo(100L);
-            assertThat(result.get(0).getPlayedAt()).isEqualTo(LocalDate.of(2024, 1, 15));
-            assertThat(result.get(0).getMemo()).isEqualTo("楽しかった");
-            assertThat(result.get(0).getPlayerCount()).isEqualTo(4);
+            assertThat(result.getContent()).hasSize(1);
+            var playRecord = result.getContent().get(0);
+            assertThat(playRecord.getId()).isEqualTo(100L);
+            assertThat(playRecord.getPlayedAt()).isEqualTo(LocalDate.of(2024, 1, 15));
+            assertThat(playRecord.getMemo()).isEqualTo("楽しかった");
+            assertThat(playRecord.getPlayerCount()).isEqualTo(4);
         }
 
         @Test
-        void ゲームが存在しなければIllegalArgumentException() {
+        void ゲームが存在しなければResourceNotFoundException() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
             when(userBoardGameRepository.findByIdAndUserId(GAME_ID, USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.listByUserBoardGame(USERNAME, GAME_ID))
-                    .isInstanceOf(IllegalArgumentException.class)
+            assertThatThrownBy(() -> sut.listByUserBoardGame(USERNAME, GAME_ID, Pageable.unpaged()))
+                    .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessage("Board game not found");
         }
     }
@@ -152,7 +157,7 @@ class PlayRecordServiceTest {
             request.setMemo("更新メモ");
             request.setPlayerCount(2);
 
-            PlayRecordResponse result = sut.update(USERNAME, 100L, request);
+            PlayRecordResponse result = sut.update(USERNAME, GAME_ID, 100L, request);
 
             ArgumentCaptor<PlayRecord> captor = ArgumentCaptor.forClass(PlayRecord.class);
             verify(playRecordRepository).save(captor.capture());
@@ -163,15 +168,29 @@ class PlayRecordServiceTest {
         }
 
         @Test
-        void 記録が存在しなければIllegalArgumentException() {
+        void 記録が存在しなければResourceNotFoundException() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
             when(playRecordRepository.findByIdAndUserId(999L, USER_ID)).thenReturn(Optional.empty());
 
             PlayRecordRequest request = new PlayRecordRequest();
             request.setPlayedAt(LocalDate.now());
 
-            assertThatThrownBy(() -> sut.update(USERNAME, 999L, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+            assertThatThrownBy(() -> sut.update(USERNAME, GAME_ID, 999L, request))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Play record not found");
+        }
+
+        @Test
+        void userBoardGameIdが一致しなければResourceNotFoundException() {
+            when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
+            when(playRecordRepository.findByIdAndUserId(100L, USER_ID))
+                    .thenReturn(Optional.of(savedRecord));
+
+            PlayRecordRequest request = new PlayRecordRequest();
+            request.setPlayedAt(LocalDate.now());
+
+            assertThatThrownBy(() -> sut.update(USERNAME, 999L, 100L, request))
+                    .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessage("Play record not found");
         }
     }
@@ -185,9 +204,30 @@ class PlayRecordServiceTest {
             when(playRecordRepository.findByIdAndUserId(100L, USER_ID))
                     .thenReturn(Optional.of(savedRecord));
 
-            sut.delete(USERNAME, 100L);
+            sut.delete(USERNAME, GAME_ID, 100L);
 
             verify(playRecordRepository).delete(savedRecord);
+        }
+
+        @Test
+        void 記録が存在しなければResourceNotFoundException() {
+            when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
+            when(playRecordRepository.findByIdAndUserId(999L, USER_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> sut.delete(USERNAME, GAME_ID, 999L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Play record not found");
+        }
+
+        @Test
+        void userBoardGameIdが一致しなければResourceNotFoundException() {
+            when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
+            when(playRecordRepository.findByIdAndUserId(100L, USER_ID))
+                    .thenReturn(Optional.of(savedRecord));
+
+            assertThatThrownBy(() -> sut.delete(USERNAME, 999L, 100L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Play record not found");
         }
     }
 }

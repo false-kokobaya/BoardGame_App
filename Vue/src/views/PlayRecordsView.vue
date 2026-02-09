@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { boardgamesApi, type UserBoardGame } from '@/api/boardgames'
 import { playsApi, type PlayRecord } from '@/api/plays'
 import AddPlayRecordModal from '@/components/AddPlayRecordModal.vue'
 import EditPlayRecordModal from '@/components/EditPlayRecordModal.vue'
 
-const router = useRouter()
 const games = ref<UserBoardGame[]>([])
 const plays = ref<PlayRecord[]>([])
 const selectedGame = ref<UserBoardGame | null>(null)
@@ -36,7 +34,7 @@ async function loadPlays() {
   playsLoading.value = true
   try {
     const { data } = await playsApi.listByGame(selectedGame.value.id)
-    plays.value = data
+    plays.value = data.content ?? []
   } finally {
     playsLoading.value = false
   }
@@ -80,10 +78,6 @@ async function deletePlayRecord(play: PlayRecord) {
       : (err.response?.data?.error ?? '削除に失敗しました')
     alert(msg)
   }
-}
-
-function goToMypage() {
-  router.push({ name: 'mypage' })
 }
 
 function selectGame(game: UserBoardGame) {

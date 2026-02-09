@@ -17,15 +17,26 @@ export interface PlayRecordRequest {
   playerCount?: number
 }
 
+/** Spring Data Page のレスポンス形状 */
+export interface Page<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  number: number
+  size: number
+  first: boolean
+  last: boolean
+}
+
 /** プレイ記録の一覧・追加・更新・削除API */
 export const playsApi = {
-  /** 指定ゲームに紐づくプレイ記録一覧を取得する */
-  listByGame(userBoardGameId: number) {
-    return client.get<PlayRecord[]>(`/me/boardgames/${userBoardGameId}/plays`)
+  /** 指定ゲームに紐づくプレイ記録一覧を取得する（ページ形式） */
+  listByGame(userBoardGameId: number, params?: { page?: number; size?: number }) {
+    return client.get<Page<PlayRecord>>(`/me/boardgames/${userBoardGameId}/plays`, { params })
   },
-  /** 全プレイ記録を取得する */
-  listAll() {
-    return client.get<PlayRecord[]>('/me/plays')
+  /** 全プレイ記録を取得する（ページ形式） */
+  listAll(params?: { page?: number; size?: number }) {
+    return client.get<Page<PlayRecord>>('/me/plays', { params })
   },
   /** 指定ゲームにプレイ記録を1件追加する */
   add(userBoardGameId: number, data: PlayRecordRequest) {

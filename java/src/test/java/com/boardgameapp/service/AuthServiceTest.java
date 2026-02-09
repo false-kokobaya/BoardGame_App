@@ -18,7 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -97,7 +99,7 @@ class AuthServiceTest {
         }
 
         @Test
-        void ユーザー名が重複していればIllegalArgumentException() {
+        void ユーザー名が重複していれば409Conflict() {
             when(userRepository.existsByUsername(USERNAME)).thenReturn(true);
 
             RegisterRequest request = new RegisterRequest();
@@ -106,12 +108,13 @@ class AuthServiceTest {
             request.setPassword(PASSWORD);
 
             assertThatThrownBy(() -> sut.register(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Username already exists");
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT)
+                    .hasMessageContaining("Username already exists");
         }
 
         @Test
-        void メールが重複していればIllegalArgumentException() {
+        void メールが重複していれば409Conflict() {
             when(userRepository.existsByUsername(USERNAME)).thenReturn(false);
             when(userRepository.existsByEmail(EMAIL)).thenReturn(true);
 
@@ -121,8 +124,9 @@ class AuthServiceTest {
             request.setPassword(PASSWORD);
 
             assertThatThrownBy(() -> sut.register(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Email already exists");
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT)
+                    .hasMessageContaining("Email already exists");
         }
     }
 

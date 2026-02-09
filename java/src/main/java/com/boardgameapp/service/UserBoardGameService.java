@@ -5,14 +5,15 @@ import com.boardgameapp.dto.UpdateBoardGameRequest;
 import com.boardgameapp.dto.UserBoardGameResponse;
 import com.boardgameapp.entity.User;
 import com.boardgameapp.entity.UserBoardGame;
-import com.boardgameapp.repository.PlayRecordRepository;
+import com.boardgameapp.exception.ResourceNotFoundException;
 import com.boardgameapp.repository.UserBoardGameRepository;
 import com.boardgameapp.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * ユーザーが所有するボードゲームの一覧・追加・更新・削除・1件取得を行うサービス。
@@ -20,32 +21,34 @@ import java.util.stream.Collectors;
 @Service
 public class UserBoardGameService {
 
+    private static final int DEFAULT_PAGE_SIZE = 20;
+
     private final UserBoardGameRepository userBoardGameRepository;
     private final UserRepository userRepository;
-    private final PlayRecordRepository playRecordRepository;
 
     public UserBoardGameService(UserBoardGameRepository userBoardGameRepository,
-                                UserRepository userRepository,
-                                PlayRecordRepository playRecordRepository) {
+                                UserRepository userRepository) {
         this.userBoardGameRepository = userBoardGameRepository;
         this.userRepository = userRepository;
-        this.playRecordRepository = playRecordRepository;
     }
 
     /**
-     * 指定ユーザー名のボードゲーム一覧を追加日時の降順で取得する。
+     * 指定ユーザー名のボードゲーム一覧を追加日時の降順で取得する（ページング対応）。
      *
      * @param username ユーザー名
-     * @return ボードゲーム一覧
+     * @param pageable ページ・サイズ・ソート
+     * @return ボードゲームのページ
      */
+
     @Transactional(readOnly = true)
-    public List<UserBoardGameResponse> listByUsername(String username) {
+    public Page<UserBoardGameResponse> listByUsername(String username, Pageable pageable) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return userBoardGameRepository.findByUserIdOrderByAddedAtDesc(user.getId())
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Pageable withSort = pageable.isUnpaged()
+                ? PageRequest.of(0, DEFAULT_PAGE_SIZE, Sort.by("addedAt").descending())
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("addedAt").descending());
+        return userBoardGameRepository.findByUserIdOrderByAddedAtDesc(user.getId(), withSort)
+                .map(this::toResponse);
     }
 
     /**
@@ -58,7 +61,7 @@ public class UserBoardGameService {
     @Transactional
     public UserBoardGameResponse add(String username, AddBoardGameRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UserBoardGame entity = new UserBoardGame();
         entity.setUserId(user.getId());
         entity.setBggId(null);
@@ -74,35 +77,54 @@ public class UserBoardGameService {
     }
 
     /**
-     * 指定IDのボードゲームを更新する。リクエストの値をそのまま反映し、null の場合はフィールドをクリアする。
+     * 指定IDのボードゲームを更新する。リクエストで null でないフィールドのみ上書き（部分更新）。
      *
      * @param username ユーザー名
      * @param id ゲームID
-     * @param request 更新内容
+     * @param request 更新内容（null のフィールドは変更しない）
      * @return 更新後のゲームのレスポンス
      */
     @Transactional
     public UserBoardGameResponse update(String username, Long id, UpdateBoardGameRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UserBoardGame entity = userBoardGameRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Board game not found"));
-        // リクエストの値をそのまま反映（null の場合はフィールドをクリア）。name は NOT NULL のため空でなければ更新
+                .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
         if (request.getName() != null && !request.getName().isBlank()) {
             entity.setName(request.getName().trim());
         }
-        entity.setThumbnailUrl(blankToNull(request.getThumbnailUrl()));
-        entity.setYearPublished(request.getYearPublished());
-        entity.setMinPlayers(request.getMinPlayers());
-        entity.setMaxPlayers(request.getMaxPlayers());
-        entity.setMinPlayTimeMinutes(request.getMinPlayTimeMinutes());
-        entity.setMaxPlayTimeMinutes(request.getMaxPlayTimeMinutes());
+        if (request.getThumbnailUrl() != null) {
+            entity.setThumbnailUrl(blankToNull(request.getThumbnailUrl()));
+        }
+        if (request.getYearPublished() != null) {
+            entity.setYearPublished(request.getYearPublished());
+        }
+        if (request.getMinPlayers() != null) {
+            entity.setMinPlayers(request.getMinPlayers());
+        }
+        if (request.getMaxPlayers() != null) {
+            entity.setMaxPlayers(request.getMaxPlayers());
+        }
+        if (request.getMinPlayTimeMinutes() != null) {
+            entity.setMinPlayTimeMinutes(request.getMinPlayTimeMinutes());
+        }
+        if (request.getMaxPlayTimeMinutes() != null) {
+            entity.setMaxPlayTimeMinutes(request.getMaxPlayTimeMinutes());
+        }
+        if (entity.getMinPlayers() != null && entity.getMaxPlayers() != null
+                && entity.getMinPlayers() > entity.getMaxPlayers()) {
+            throw new IllegalArgumentException("Min players must not exceed max players");
+        }
+        if (entity.getMinPlayTimeMinutes() != null && entity.getMaxPlayTimeMinutes() != null
+                && entity.getMinPlayTimeMinutes() > entity.getMaxPlayTimeMinutes()) {
+            throw new IllegalArgumentException("Min play time must not exceed max play time");
+        }
         entity = userBoardGameRepository.save(entity);
         return toResponse(entity);
     }
 
     /**
-     * 指定IDのボードゲームを削除する。紐づくプレイ記録も先に削除する。
+     * 指定IDのボードゲームを削除する。紐づくプレイ記録はエンティティのカスケードで削除される。
      *
      * @param username ユーザー名
      * @param id ゲームID
@@ -110,10 +132,9 @@ public class UserBoardGameService {
     @Transactional
     public void delete(String username, Long id) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UserBoardGame entity = userBoardGameRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Board game not found"));
-        playRecordRepository.deleteByUserBoardGameId(entity.getId());
+                .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
         userBoardGameRepository.delete(entity);
     }
 
@@ -127,9 +148,9 @@ public class UserBoardGameService {
     @Transactional(readOnly = true)
     public UserBoardGameResponse getByIdAndUsername(Long id, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UserBoardGame entity = userBoardGameRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Board game not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
         return toResponse(entity);
     }
 
@@ -142,17 +163,16 @@ public class UserBoardGameService {
 
     /** エンティティをレスポンスDTOに変換する。 */
     private UserBoardGameResponse toResponse(UserBoardGame e) {
-        UserBoardGameResponse r = new UserBoardGameResponse();
-        r.setId(e.getId());
-        r.setBggId(e.getBggId());
-        r.setName(e.getName());
-        r.setThumbnailUrl(e.getThumbnailUrl());
-        r.setYearPublished(e.getYearPublished());
-        r.setMinPlayers(e.getMinPlayers());
-        r.setMaxPlayers(e.getMaxPlayers());
-        r.setMinPlayTimeMinutes(e.getMinPlayTimeMinutes());
-        r.setMaxPlayTimeMinutes(e.getMaxPlayTimeMinutes());
-        r.setAddedAt(e.getAddedAt());
-        return r;
+        return new UserBoardGameResponse(
+                e.getId(),
+                e.getBggId(),
+                e.getName(),
+                e.getThumbnailUrl(),
+                e.getYearPublished(),
+                e.getMinPlayers(),
+                e.getMaxPlayers(),
+                e.getMinPlayTimeMinutes(),
+                e.getMaxPlayTimeMinutes(),
+                e.getAddedAt());
     }
 }

@@ -1,7 +1,10 @@
 package com.boardgameapp.entity;
 
 import jakarta.persistence.*;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ユーザーが所持するボードゲーム1件を表すエンティティ。
@@ -33,11 +36,21 @@ public class UserBoardGame {
     private Integer maxPlayTimeMinutes;
 
     @Column(nullable = false, updatable = false)
-    private Instant addedAt = Instant.now();
+    private Instant addedAt;
+
+    @PrePersist
+    private void onPrePersist() {
+        if (addedAt == null) {
+            addedAt = Instant.now();
+        }
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private User user;
+
+    @OneToMany(mappedBy = "userBoardGame", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<PlayRecord> playRecords = new ArrayList<>();
 
     public Long getId() {
         return id;

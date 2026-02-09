@@ -26,9 +26,17 @@ client.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err.response?.status === 401) {
-      const auth = useAuthStore()
-      auth.clearAuth()
-      window.location.href = '/login'
+      const pathname = window.location.pathname
+      const requestUrl = err.response?.config?.url ?? err.config?.url ?? ''
+      const isLoginPage = pathname === '/login'
+      const isAuthEndpoint =
+        typeof requestUrl === 'string' &&
+        (requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register'))
+      if (!isLoginPage && !isAuthEndpoint) {
+        const auth = useAuthStore()
+        auth.clearAuth()
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(err)
   }

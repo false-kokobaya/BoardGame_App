@@ -2,6 +2,7 @@ package com.boardgameapp.controller;
 
 import com.boardgameapp.dto.PlayRecordRequest;
 import com.boardgameapp.dto.PlayRecordResponse;
+import com.boardgameapp.security.JwtUtil;
 import com.boardgameapp.service.PlayRecordService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -12,14 +13,20 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -29,6 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,8 +47,14 @@ class MePlayRecordControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private PlayRecordService playRecordService;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     private ObjectMapper objectMapper;
 
@@ -66,16 +80,17 @@ class MePlayRecordControllerTest {
             resp.setPlayedAt(LocalDate.of(2024, 1, 15));
             resp.setMemo("メモ");
             resp.setPlayerCount(4);
-            when(playRecordService.listByUserBoardGame(USERNAME, GAME_ID)).thenReturn(List.of(resp));
+            when(playRecordService.listByUserBoardGame(eq(USERNAME), eq(GAME_ID), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(resp)));
 
             mockMvc.perform(get("/api/me/boardgames/" + GAME_ID + "/plays"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].id").value(100))
-                    .andExpect(jsonPath("$[0].memo").value("メモ"))
-                    .andExpect(jsonPath("$[0].playerCount").value(4));
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].id").value(100))
+                    .andExpect(jsonPath("$.content[0].memo").value("メモ"))
+                    .andExpect(jsonPath("$.content[0].playerCount").value(4));
 
-            verify(playRecordService).listByUserBoardGame(USERNAME, GAME_ID);
+            verify(playRecordService).listByUserBoardGame(eq(USERNAME), eq(GAME_ID), any(Pageable.class));
         }
 
         @Test
@@ -107,7 +122,8 @@ class MePlayRecordControllerTest {
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(body)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location", containsString("/plays/101")))
                     .andExpect(jsonPath("$.id").value(101))
                     .andExpect(jsonPath("$.userBoardGameId").value(10));
 
@@ -128,7 +144,7 @@ class MePlayRecordControllerTest {
             PlayRecordResponse updated = new PlayRecordResponse();
             updated.setId(PLAY_ID);
             updated.setMemo("更新メモ");
-            when(playRecordService.update(eq(USERNAME), eq(PLAY_ID), ArgumentMatchers.any(PlayRecordRequest.class)))
+            when(playRecordService.update(eq(USERNAME), eq(GAME_ID), eq(PLAY_ID), ArgumentMatchers.any(PlayRecordRequest.class)))
                     .thenReturn(updated);
 
             mockMvc.perform(put("/api/me/boardgames/" + GAME_ID + "/plays/" + PLAY_ID)
@@ -139,7 +155,7 @@ class MePlayRecordControllerTest {
                     .andExpect(jsonPath("$.id").value(100))
                     .andExpect(jsonPath("$.memo").value("更新メモ"));
 
-            verify(playRecordService).update(eq(USERNAME), eq(PLAY_ID), ArgumentMatchers.any(PlayRecordRequest.class));
+            verify(playRecordService).update(eq(USERNAME), eq(GAME_ID), eq(PLAY_ID), ArgumentMatchers.any(PlayRecordRequest.class));
         }
     }
 
@@ -153,7 +169,7 @@ class MePlayRecordControllerTest {
                             .with(csrf()))
                     .andExpect(status().isNoContent());
 
-            verify(playRecordService).delete(USERNAME, PLAY_ID);
+            verify(playRecordService).delete(USERNAME, GAME_ID, PLAY_ID);
         }
     }
 }

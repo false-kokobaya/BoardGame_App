@@ -6,11 +6,11 @@ import com.boardgameapp.entity.User;
 import com.boardgameapp.entity.WishlistItem;
 import com.boardgameapp.repository.UserRepository;
 import com.boardgameapp.repository.WishlistRepository;
+import com.boardgameapp.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * ほしいものリストの一覧・追加・削除を行うサービス。
@@ -35,10 +35,10 @@ public class WishlistService {
     @Transactional(readOnly = true)
     public List<WishlistItemResponse> listByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return wishlistRepository.findByUserIdOrderByAddedAtDesc(user.getId()).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -51,7 +51,7 @@ public class WishlistService {
     @Transactional
     public WishlistItemResponse add(String username, AddWishlistItemRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         WishlistItem entity = new WishlistItem();
         entity.setUserId(user.getId());
         entity.setName(request.getName().trim());
@@ -69,9 +69,9 @@ public class WishlistService {
     @Transactional
     public void delete(String username, Long id) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         WishlistItem entity = wishlistRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Wishlist item not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Wishlist item not found"));
         wishlistRepository.delete(entity);
     }
 

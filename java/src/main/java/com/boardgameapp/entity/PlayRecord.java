@@ -1,6 +1,9 @@
 package com.boardgameapp.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -27,10 +30,19 @@ public class PlayRecord {
     @Column(length = 2000)
     private String memo;
 
+    @NotNull
+    @Min(1)
     private Integer playerCount;
 
     @Column(nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
+
+    @PrePersist
+    private void setCreatedAtIfNull() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_board_game_id", insertable = false, updatable = false)

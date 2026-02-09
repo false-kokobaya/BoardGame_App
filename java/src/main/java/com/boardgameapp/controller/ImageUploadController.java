@@ -1,5 +1,6 @@
 package com.boardgameapp.controller;
 
+import com.boardgameapp.dto.ErrorResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,42 +25,51 @@ public class ImageUploadController {
     private String uploadDir;
 
     /**
-     * 画像ファイルをアップロードし、公開URLを返す。
+     * 画像ファイルをアップロードし、公開URLを返す。保存先は認証ユーザーごとのサブディレクトリ。
+     * IOException は GlobalExceptionHandler で 500 として返す。
      *
-     * @param auth 認証情報
+     * @param auth 認証情報（ユーザーごとの保存パスに利用）
      * @param file アップロードする画像ファイル
      * @return アクセス用URL（/api/uploads/xxx）
      */
     @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<UploadImageResponse> uploadImage(
+    public ResponseEntity<?> uploadImage(
             Authentication auth,
             @RequestParam("file") MultipartFile file) throws IOException {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(new ErrorResponse("file is empty"));
         }
         String contentType = file.getContentType();
         String ext = resolveExtension(contentType, file.getOriginalFilename());
         if (ext == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(new ErrorResponse("unsupported/invalid file extension"));
         }
-        String filename = UUID.randomUUID() + "." + ext;
-        Path dir = Path.of(uploadDir).toAbsolutePath();
+        String username = (auth != null && auth.getName() != null) ? auth.getName() : "anonymous";
+        String safeUser = username.replaceAll("[^a-zA-Z0-9_-]", "_");
+        Path dir = Path.of(uploadDir).toAbsolutePath().resolve(safeUser);
         Files.createDirectories(dir);
+        String filename = UUID.randomUUID() + "." + ext;
         Path target = dir.resolve(filename);
         file.transferTo(target.toFile());
-        String url = "/api/uploads/" + filename;
+        String url = "/api/uploads/" + safeUser + "/" + filename;
         return ResponseEntity.ok(new UploadImageResponse(url));
     }
 
-    private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg");
+    /** 許可する画像拡張子。jpeg は resolveExtension 内で "jpg" に正規化される。 */
+    private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp");
 
-    /** Content-Type またはファイル名から拡張子を決定。画像でなければ null */
+    /** Content-Type またはファイル名から拡張子を決定。画像でなければ null。SVG は許可しない。 */
     private static String resolveExtension(String contentType, String originalFilename) {
+        if ("image/svg+xml".equals(contentType)) {
+            return null;
+        }
         if (contentType != null && contentType.startsWith("image/")) {
-            return extensionFromContentType(contentType);
+            String ext = extensionFromContentType(contentType);
+            if (ext != null) return ext;
         }
         if (originalFilename != null && originalFilename.contains(".")) {
             String ext = originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase();
+            if ("svg".equals(ext)) return null;
             if (IMAGE_EXTENSIONS.contains(ext)) {
                 return "jpeg".equals(ext) ? "jpg" : ext;
             }
@@ -68,21 +78,20 @@ public class ImageUploadController {
     }
 
     /**
-     * Content-Type から保存用拡張子を返す。
+     * Content-Type から保存用拡張子を返す。ホワイトリスト外または null の場合は null。SVG は含めない。
      *
      * @param contentType 例: image/png
-     * @return 拡張子（jpg, png など）
+     * @return 拡張子（jpg, png など）。未対応の場合は null
      */
     private static String extensionFromContentType(String contentType) {
-        if (contentType == null) return "jpg";
+        if (contentType == null) return null;
         return switch (contentType) {
             case "image/jpeg", "image/jpg" -> "jpg";
             case "image/png" -> "png";
             case "image/gif" -> "gif";
             case "image/webp" -> "webp";
             case "image/bmp" -> "bmp";
-            case "image/svg+xml" -> "svg";
-            default -> "jpg";
+            default -> null;
         };
     }
 
