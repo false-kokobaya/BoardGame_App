@@ -37,11 +37,15 @@ public class UserBoardGameService {
      * @param pageable ページ・サイズ・ソート
      * @return ボードゲームのページ
      */
+    private static final int DEFAULT_PAGE_SIZE = 20;
+
     @Transactional(readOnly = true)
     public Page<UserBoardGameResponse> listByUsername(String username, Pageable pageable) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        Pageable withSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("addedAt").descending());
+        Pageable withSort = pageable.isUnpaged()
+                ? PageRequest.of(0, DEFAULT_PAGE_SIZE, Sort.by("addedAt").descending())
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("addedAt").descending());
         return userBoardGameRepository.findByUserIdOrderByAddedAtDesc(user.getId(), withSort)
                 .map(this::toResponse);
     }

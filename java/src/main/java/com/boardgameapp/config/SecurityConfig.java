@@ -18,7 +18,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Spring Security の設定（JWT認証・CORS・認可）。
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private static final String DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:3000";
+    private static final List<String> DEFAULT_ALLOWED_ORIGINS = List.of("http://localhost:5173", "http://localhost:3000");
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -58,13 +57,14 @@ public class SecurityConfig {
     /** フロントエンドオリジン向けのCORS設定を返す。 */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        List<String> origins = Arrays.stream(allowedOriginsConfig.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+        List<String> origins = (allowedOriginsConfig == null || allowedOriginsConfig.isBlank())
+                ? DEFAULT_ALLOWED_ORIGINS
+                : Arrays.stream(allowedOriginsConfig.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList();
         CorsConfiguration config = new CorsConfiguration();
-        List<String> defaultList = Arrays.stream(DEFAULT_ALLOWED_ORIGINS.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
-        config.setAllowedOrigins(origins.isEmpty() ? defaultList : origins);
+        config.setAllowedOrigins(origins.isEmpty() ? DEFAULT_ALLOWED_ORIGINS : origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

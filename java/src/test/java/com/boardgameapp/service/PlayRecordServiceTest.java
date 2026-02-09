@@ -88,13 +88,13 @@ class PlayRecordServiceTest {
             when(playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(eq(GAME_ID), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(savedRecord)));
 
-            List<PlayRecordResponse> result = sut.listByUserBoardGame(USERNAME, GAME_ID);
+            var result = sut.listByUserBoardGame(USERNAME, GAME_ID, Pageable.unpaged());
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getId()).isEqualTo(100L);
-            assertThat(result.get(0).getPlayedAt()).isEqualTo(LocalDate.of(2024, 1, 15));
-            assertThat(result.get(0).getMemo()).isEqualTo("楽しかった");
-            assertThat(result.get(0).getPlayerCount()).isEqualTo(4);
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getId()).isEqualTo(100L);
+            assertThat(result.getContent().get(0).getPlayedAt()).isEqualTo(LocalDate.of(2024, 1, 15));
+            assertThat(result.getContent().get(0).getMemo()).isEqualTo("楽しかった");
+            assertThat(result.getContent().get(0).getPlayerCount()).isEqualTo(4);
         }
 
         @Test
@@ -102,7 +102,7 @@ class PlayRecordServiceTest {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
             when(userBoardGameRepository.findByIdAndUserId(GAME_ID, USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.listByUserBoardGame(USERNAME, GAME_ID))
+            assertThatThrownBy(() -> sut.listByUserBoardGame(USERNAME, GAME_ID, Pageable.unpaged()))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessage("Board game not found");
         }

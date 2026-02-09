@@ -3,15 +3,21 @@ package com.boardgameapp.dto;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * ボードゲームの name 以外の共通リクエストフィールドとバリデーション。
  * AddBoardGameRequest / UpdateBoardGameRequest の基底。
  */
+@Getter
+@Setter
 public abstract class BoardGameBaseRequest {
 
     @Size(max = 1000)
+    @Pattern(regexp = "^(https?://.*)?$", message = "サムネイル URL は空か http/https スキームで指定してください")
     private String thumbnailUrl;
 
     @Min(value = 1900, message = "Year must be 1900 or later")
@@ -33,54 +39,6 @@ public abstract class BoardGameBaseRequest {
     @Min(value = 1, message = "Max play time must be at least 1 minute")
     @Max(value = 1440, message = "Max play time must be at most 1440 minutes")
     private Integer maxPlayTimeMinutes;
-
-    public String getThumbnailUrl() {
-        return thumbnailUrl;
-    }
-
-    public void setThumbnailUrl(String thumbnailUrl) {
-        this.thumbnailUrl = thumbnailUrl;
-    }
-
-    public Integer getYearPublished() {
-        return yearPublished;
-    }
-
-    public void setYearPublished(Integer yearPublished) {
-        this.yearPublished = yearPublished;
-    }
-
-    public Integer getMinPlayers() {
-        return minPlayers;
-    }
-
-    public void setMinPlayers(Integer minPlayers) {
-        this.minPlayers = minPlayers;
-    }
-
-    public Integer getMaxPlayers() {
-        return maxPlayers;
-    }
-
-    public void setMaxPlayers(Integer maxPlayers) {
-        this.maxPlayers = maxPlayers;
-    }
-
-    public Integer getMinPlayTimeMinutes() {
-        return minPlayTimeMinutes;
-    }
-
-    public void setMinPlayTimeMinutes(Integer minPlayTimeMinutes) {
-        this.minPlayTimeMinutes = minPlayTimeMinutes;
-    }
-
-    public Integer getMaxPlayTimeMinutes() {
-        return maxPlayTimeMinutes;
-    }
-
-    public void setMaxPlayTimeMinutes(Integer maxPlayTimeMinutes) {
-        this.maxPlayTimeMinutes = maxPlayTimeMinutes;
-    }
 
     /** 人数・プレイ時間の範囲整合性（min <= max）。 */
     @AssertTrue(message = "Min players must not exceed max players")

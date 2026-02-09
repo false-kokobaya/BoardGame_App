@@ -15,12 +15,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -76,16 +80,17 @@ class MePlayRecordControllerTest {
             resp.setPlayedAt(LocalDate.of(2024, 1, 15));
             resp.setMemo("メモ");
             resp.setPlayerCount(4);
-            when(playRecordService.listByUserBoardGame(USERNAME, GAME_ID)).thenReturn(List.of(resp));
+            when(playRecordService.listByUserBoardGame(eq(USERNAME), eq(GAME_ID), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(resp)));
 
             mockMvc.perform(get("/api/me/boardgames/" + GAME_ID + "/plays"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].id").value(100))
-                    .andExpect(jsonPath("$[0].memo").value("メモ"))
-                    .andExpect(jsonPath("$[0].playerCount").value(4));
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].id").value(100))
+                    .andExpect(jsonPath("$.content[0].memo").value("メモ"))
+                    .andExpect(jsonPath("$.content[0].playerCount").value(4));
 
-            verify(playRecordService).listByUserBoardGame(USERNAME, GAME_ID);
+            verify(playRecordService).listByUserBoardGame(eq(USERNAME), eq(GAME_ID), any(Pageable.class));
         }
 
         @Test

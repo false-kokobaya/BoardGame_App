@@ -45,34 +45,30 @@ public class GlobalExceptionHandler {
      * クライアントには汎用メッセージを返し、詳細はログに記録する。
      *
      * @param ex 例外
-     * @return error キーに安全なメッセージ
+     * @return ErrorResponse
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("IllegalArgumentException: {}", ex.getMessage(), ex);
-        Map<String, String> body = new HashMap<>();
-        body.put("error", SAFE_ERROR_MESSAGE);
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.badRequest().body(new ErrorResponse(SAFE_ERROR_MESSAGE));
     }
 
     /**
      * リソース未検出を 404 で返す。
      *
      * @param ex 例外
-     * @return error メッセージ
+     * @return ErrorResponse
      */
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleResourceNotFound(ResourceNotFoundException ex) {
-        Map<String, String> body = new HashMap<>();
-        body.put("error", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
     }
 
     /**
      * IOException（例: 画像アップロード保存失敗）を 500 で返す。
      *
      * @param ex 例外
-     * @return error メッセージ
+     * @return ErrorResponse
      */
     @ExceptionHandler(IOException.class)
     public ResponseEntity<ErrorResponse> handleIOException(IOException ex) {
@@ -85,12 +81,11 @@ public class GlobalExceptionHandler {
      * 認証失敗（ログイン不正）を 401 で返す。
      *
      * @param ex 認証例外
-     * @return error メッセージ
+     * @return ErrorResponse
      */
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
-        Map<String, String> body = new HashMap<>();
-        body.put("error", "Invalid username or password");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse("Invalid username or password"));
     }
 }

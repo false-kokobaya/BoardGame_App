@@ -1,7 +1,5 @@
 package com.boardgameapp.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +19,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/me")
 public class ImageUploadController {
-
-    private static final Logger log = LoggerFactory.getLogger(ImageUploadController.class);
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;

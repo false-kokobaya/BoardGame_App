@@ -6,9 +6,11 @@ import com.boardgameapp.dto.UserBoardGameResponse;
 import com.boardgameapp.service.UserBoardGameService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -25,6 +27,13 @@ public class MeBoardGameController {
         this.userBoardGameService = userBoardGameService;
     }
 
+    private static String requireUsername(Authentication auth) {
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return auth.getName();
+    }
+
     /**
      * 認証ユーザーのボードゲーム一覧を取得する（ページング: page, size をクエリパラメータで指定可能）。
      *
@@ -34,7 +43,7 @@ public class MeBoardGameController {
      */
     @GetMapping
     public ResponseEntity<List<UserBoardGameResponse>> list(Authentication auth, Pageable pageable) {
-        String username = auth.getName();
+        String username = requireUsername(auth);
         List<UserBoardGameResponse> content = userBoardGameService.listByUsername(username, pageable).getContent();
         return ResponseEntity.ok(content);
     }
@@ -50,7 +59,7 @@ public class MeBoardGameController {
     public ResponseEntity<UserBoardGameResponse> add(
             Authentication auth,
             @Valid @RequestBody AddBoardGameRequest request) {
-        String username = auth.getName();
+        String username = requireUsername(auth);
         UserBoardGameResponse created = userBoardGameService.add(username, request);
         return ResponseEntity.ok(created);
     }
@@ -68,7 +77,7 @@ public class MeBoardGameController {
             Authentication auth,
             @PathVariable Long id,
             @Valid @RequestBody UpdateBoardGameRequest request) {
-        String username = auth.getName();
+        String username = requireUsername(auth);
         UserBoardGameResponse updated = userBoardGameService.update(username, id, request);
         return ResponseEntity.ok(updated);
     }
@@ -82,7 +91,7 @@ public class MeBoardGameController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(Authentication auth, @PathVariable Long id) {
-        String username = auth.getName();
+        String username = requireUsername(auth);
         userBoardGameService.delete(username, id);
         return ResponseEntity.noContent().build();
     }
@@ -96,7 +105,7 @@ public class MeBoardGameController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<UserBoardGameResponse> get(Authentication auth, @PathVariable Long id) {
-        String username = auth.getName();
+        String username = requireUsername(auth);
         UserBoardGameResponse response = userBoardGameService.getByIdAndUsername(id, username);
         return ResponseEntity.ok(response);
     }

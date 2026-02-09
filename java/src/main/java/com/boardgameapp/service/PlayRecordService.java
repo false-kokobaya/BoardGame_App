@@ -11,10 +11,10 @@ import com.boardgameapp.repository.UserBoardGameRepository;
 import com.boardgameapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * プレイ記録の一覧・追加・更新・削除を行うサービス。
@@ -40,38 +40,34 @@ public class PlayRecordService {
     }
 
     /**
-     * 指定ゲームに紐づくプレイ記録一覧をプレイ日の降順で取得する。
+     * 指定ゲームに紐づくプレイ記録一覧をプレイ日の降順で取得する（ページング対応）。
      *
      * @param username ユーザー名
      * @param userBoardGameId ユーザー所持ゲームID
-     * @return プレイ記録一覧
+     * @param pageable ページ・サイズ
+     * @return プレイ記録のページ
      */
     @Transactional(readOnly = true)
-    public List<PlayRecordResponse> listByUserBoardGame(String username, Long userBoardGameId) {
+    public Page<PlayRecordResponse> listByUserBoardGame(String username, Long userBoardGameId, Pageable pageable) {
         User user = findUserOrThrow(username);
         UserBoardGame ubg = userBoardGameRepository.findByIdAndUserId(userBoardGameId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Board game not found"));
-        return playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(ubg.getId(), Pageable.unpaged())
-                .getContent()
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return playRecordRepository.findByUserBoardGameIdOrderByPlayedAtDesc(ubg.getId(), pageable)
+                .map(this::toResponse);
     }
 
     /**
-     * 指定ユーザーの全プレイ記録をプレイ日の降順で取得する。
+     * 指定ユーザーのプレイ記録をプレイ日の降順で取得する（ページング対応）。
      *
      * @param username ユーザー名
-     * @return プレイ記録一覧
+     * @param pageable ページ・サイズ
+     * @return プレイ記録のページ
      */
     @Transactional(readOnly = true)
-    public List<PlayRecordResponse> listAllByUsername(String username) {
+    public Page<PlayRecordResponse> listAllByUsername(String username, Pageable pageable) {
         User user = findUserOrThrow(username);
-        return playRecordRepository.findByUserIdOrderByPlayedAtDesc(user.getId(), Pageable.unpaged())
-                .getContent()
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return playRecordRepository.findByUserIdOrderByPlayedAtDesc(user.getId(), pageable)
+                .map(this::toResponse);
     }
 
     /**

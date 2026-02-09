@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -75,7 +76,7 @@ class UserBoardGameServiceTest {
             when(userBoardGameRepository.findByUserIdOrderByAddedAtDesc(eq(USER_ID), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(savedGame)));
 
-            var result = sut.listByUsername(USERNAME, Pageable.unpaged());
+            var result = sut.listByUsername(USERNAME, PageRequest.of(0, 20));
 
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getName()).isEqualTo("カタン");
@@ -87,7 +88,7 @@ class UserBoardGameServiceTest {
         void ユーザーが存在しなければResourceNotFoundException() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.listByUsername(USERNAME, Pageable.unpaged()))
+            assertThatThrownBy(() -> sut.listByUsername(USERNAME, PageRequest.of(0, 20)))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessage("User not found");
         }
